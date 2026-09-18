@@ -71,7 +71,9 @@ pip install -r requirements.txt
 python -m unittest discover -s tests -p "test_*.py"
 ```
 
-### 3. Model Training
+### 3. Model Training & Retraining
+
+#### A. Initial Training on Synthetic or Zooniverse Practice Data:
 Train on synthetic mock light curves:
 ```bash
 python train.py --use_mock --num_mock_samples 120 --epochs 10 --batch_size 16 --lr 2e-4
@@ -81,18 +83,59 @@ Or train with live Zooniverse subjects:
 python train.py --fetch_zooniverse --max_subjects 50 --epochs 10
 ```
 
-### 4. Single Image Prediction
+#### B. Retraining on Human-Verified Annotation Data:
+Retrain the **Dual-Stream** (Global background noise + Local ROI curvature) model on verified annotations:
+```bash
+python train_dual_stream.py --data_csv data/annotated_training_data.csv --epochs 10 --batch_size 8
+```
+Retrain the **Single-Stream** ResNet-18 model:
+```bash
+python train.py --data_csv data/annotated_training_data.csv --epochs 10 --batch_size 8
+```
+
+---
+
+## Interactive Active-Learning & Annotation Station
+
+Launch the local interactive verification hub to expand ground truth with 1-click / 1-key decisions:
+```bash
+python annotate.py --port 8080
+```
+- **Live Endpoint**: `http://127.0.0.1:8080`
+- **Single-Action Decision Controls**:
+  - `[Space / Enter]`: Confirm model hypothesis (`YES, GO AHEAD`)
+  - `[1]`: Ground truth = `PULSE`
+  - `[2]`: Ground truth = `NOISE`
+  - `[3]`: Ground truth = `UNSURE` (`unclear`)
+  - `[S]`: Skip subject
+- **Dual-Marker Support**: Automatically detects both practice red circles (`marker_type: "red_circle"`) and real space observatory candidate intervals (`marker_type: "blue_band"`).
+- **Automated Catalog Replenishment**: Continuously streams authentic space telescope subjects from Swift-BAT (Sets `118003` & `117815`) and Fermi GBM (Set `137715`) whenever the unannotated queue drops below 10.
+- **Export & Dataset Merging**:
+  ```bash
+  python annotate.py --export_combined
+  ```
+
+---
+
+## Inference & Evaluation
+
+### 1. Single Image Prediction
 Run inference on a local file:
 ```bash
-python predict.py --image data/mock_burst_chaser/images/mock_100000.png
+python predict.py --image data/zooniverse/images/95372866.png --dual_stream
 ```
 Or directly on a web image URL:
 ```bash
-python predict.py --image "https://panoptes-uploads.zooniverse.org/subject_location/89f658d8-8007-4499-80f9-c016d94cb514.png"
+python predict.py --image "https://panoptes-uploads.zooniverse.org/subject_location/89f658d8-8007-4499-80f9-c016d94cb514.png" --dual_stream
 ```
 
-### 5. Holdout Evaluation & Confusion Matrix
-Evaluate performance on the holdout test set and generate `confusion_matrix.png`:
+### 2. Holdout Evaluation & Confusion Matrix
+Evaluate performance on the holdout test set:
 ```bash
-python predict.py --evaluate --test_csv checkpoints/holdout_test.csv
+python predict.py --evaluate --test_csv checkpoints/holdout_test.csv --dual_stream
 ```
+Evaluate on verified human checking data:
+```bash
+python predict.py --evaluate --test_csv data/annotated_training_data.csv --dual_stream --output_cm checkpoints/annotated_data_cm.png
+```
+

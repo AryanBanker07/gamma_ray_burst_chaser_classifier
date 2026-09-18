@@ -1,2 +1,12 @@
 subject_id,grb_id,image_path,image_source,label,label_id,verified_label,verified_label_id,model_guess,model_confidence,is_agreement,timestamp
-95225861,GRB111228A,data\zooniverse\images\95225861.png,data\zooniverse\images\95225861.png,pulse,0,pulse,0,pulse,0.4075,True,2026-09-18 21:18:57
+95372789,GRB050306,data\zooniverse\images\95372789.png,data\zooniverse\images\95372789.png,pulse,0,pulse,0,unclear,0.3757,False,2026-09-18 22:23:39
+mock_100002,GRB120002C,data\mock_burst_chaser\images\mock_100002.png,data\mock_burst_chaser\images\mock_100002.png,pulse,0,pulse,0,unclear,0.4783,False,2026-09-18 21:41:57
+mock_100008,GRB120008A,data\mock_burst_chaser\images\mock_100008.png,data\mock_burst_chaser\images\mock_100008.png,noise,1,noise,1,unclear,0.509,False,2026-09-18 21:42:04
+95372816,GRB050509B,data\zooniverse\images\95372816.png,data\zooniverse\images\95372816.png,unclear,2,unclear,2,unclear,0.4001,True,2026-09-18 22:24:11
+mock_100004,GRB120004A,data\mock_burst_chaser\images\mock_100004.png,data\mock_burst_chaser\images\mock_100004.png,pulse,0,pulse,0,unclear,0.544,False,2026-09-18 21:42:00
+95372821,GRB050528,data\zooniverse\images\95372821.png,data\zooniverse\images\95372821.png,pulse,0,pulse,0,unclear,0.4076,False,2026-09-18 22:24:17
+95225872,GRB190719C,data\zooniverse\images\95225872.png,data\zooniverse\images\95225872.png,pulse,0,pulse,0,unclear,0.4387,False,2026-09-18 21:41:14
+95372841,GRB050730,data\zooniverse\images\95372841.png,data\zooniverse\images\95372841.png,pulse,0,pulse,0,unclear,0.3862,False,2026-09-18 22:24:34
+95372857,GRB050824,data\zooniverse\images\95372857.png,data\zooniverse\images\95372857.png,pulse,0,pulse,0,unclear,0.4208,False,2026-09-18 22:24:43
+mock_100003,GRB120003D,data\mock_burst_chaser\images\mock_100003.png,data\mock_burst_chaser\images\mock_100003.png,pulse,0,pulse,0,unclear,0.5055,False,2026-09-18 21:41:59
+95372839,GRB050726,data\zooniverse\images\95372839.png,data\zooniverse\images\95372839.png,pulse,0,pulse,0,unclear,0.4183,False,2026-09-18 22:24:33

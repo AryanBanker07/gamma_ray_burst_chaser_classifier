@@ -201,35 +201,46 @@ def train_dual_stream(
     real_csv_path = "data/zooniverse/subjects_manifest.csv"
     if os.path.exists(real_csv_path):
         real_df = pd.read_csv(real_csv_path)
-        real_dataset = DualStreamBurstChaserDataset(real_df, is_train=False)
-        real_loader = DataLoader(real_dataset, batch_size=1, shuffle=False)
+        if "label_id" in real_df.columns:
+            real_df = real_df[real_df["label_id"].isin([0, 1, 2])].copy()
+        elif "label" in real_df.columns:
+            real_df = real_df[real_df["label"].isin(CLASS_NAMES)].copy()
 
-        real_preds, real_targets = [], []
-        with torch.no_grad():
-            for batch in real_loader:
-                x_g = batch["image_global"].to(device)
-                x_l = batch["image_local"].to(device)
-                logits = model(x_g, x_l)
-                preds = torch.argmax(logits, dim=1).cpu().numpy()
-                real_preds.extend(preds)
-                real_targets.extend(batch["label"].cpu().numpy())
+        if "image_path" in real_df.columns:
+            real_df = real_df[real_df["image_path"].apply(lambda p: os.path.exists(str(p)) if pd.notna(p) else False)].copy()
 
-        real_preds = np.array(real_preds)
-        real_targets = np.array(real_targets)
-        real_acc = accuracy_score(real_targets, real_preds)
-        real_f1 = f1_score(real_targets, real_preds, average="macro", zero_division=0)
-        print(f"Real Swift-BAT Evaluation: Acc = {real_acc:.4f} | Macro F1 = {real_f1:.4f}")
-        print("\nReal Swift-BAT Classification Report:")
-        print(classification_report(real_targets, real_preds, target_names=CLASS_NAMES, zero_division=0))
+        if len(real_df) > 0:
+            real_dataset = DualStreamBurstChaserDataset(real_df, is_train=False)
+            real_loader = DataLoader(real_dataset, batch_size=1, shuffle=False)
 
-        real_cm_path = str(out_path / "dual_stream_real_cm.png")
-        plot_confusion_matrix(
-            real_targets,
-            real_preds,
-            class_names=CLASS_NAMES,
-            output_path=real_cm_path,
-            title="Dual-Stream Model (Global + Local)\nReal NASA Swift-BAT Subjects (N=19)",
-        )
+            real_preds, real_targets = [], []
+            with torch.no_grad():
+                for batch in real_loader:
+                    x_g = batch["image_global"].to(device)
+                    x_l = batch["image_local"].to(device)
+                    logits = model(x_g, x_l)
+                    preds = torch.argmax(logits, dim=1).cpu().numpy()
+                    real_preds.extend(preds)
+                    real_targets.extend(batch["label"].cpu().numpy())
+
+            real_preds = np.array(real_preds)
+            real_targets = np.array(real_targets)
+            real_acc = accuracy_score(real_targets, real_preds)
+            real_f1 = f1_score(real_targets, real_preds, average="macro", zero_division=0)
+            print(f"Real Swift-BAT Evaluation: Acc = {real_acc:.4f} | Macro F1 = {real_f1:.4f}")
+            print("\nReal Swift-BAT Classification Report:")
+            print(classification_report(real_targets, real_preds, target_names=CLASS_NAMES, zero_division=0))
+
+            real_cm_path = str(out_path / "dual_stream_real_cm.png")
+            plot_confusion_matrix(
+                real_targets,
+                real_preds,
+                class_names=CLASS_NAMES,
+                output_path=real_cm_path,
+                title=f"Dual-Stream Model (Global + Local)\nReal NASA Swift-BAT Subjects (N={len(real_df)})",
+            )
+        else:
+            real_acc, real_f1, real_cm_path = None, None, None
     else:
         real_acc, real_f1, real_cm_path = None, None, None
 

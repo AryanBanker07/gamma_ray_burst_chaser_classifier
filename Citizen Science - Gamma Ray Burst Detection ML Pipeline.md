@@ -585,22 +585,33 @@ All personal checking annotations are persisted using a standardized schema comp
    - **Unclear Precision**: 0.5000 | Recall: 1.0000 | F1: 0.6667
    - **Output Confusion Matrix**: [`checkpoints/annotated_data_cm.png`](file:///c:/Users/banke/OneDrive/Desktop/Citizen%20science/gamma%20ray%20burst%20detection/checkpoints/annotated_data_cm.png)
 
-3. **Re-Training on Personal Checking or Combined Datasets**:
+3. **Re-Training on Personal Checking Datasets ($N=102$ Unique Subjects / $135$ Annotations)**:
    Both training orchestrators natively accept custom CSV datasets via `--data_csv`:
-   - **Dual-Stream Re-Training (Global Noise Floor + Local ROI)**:
+   - **Dual-Stream Re-Training (Global Noise Floor + Local ROI Fusion)**:
      ```bash
-     python train_dual_stream.py --data_csv data/combined_training_dataset.csv --epochs 10 --batch_size 4
+     python train_dual_stream.py --data_csv data/annotated_training_data.csv --epochs 10 --batch_size 8
      ```
-     Or training exclusively on personal annotations:
+     - **Dataset Partitioning (80/10/10 Stratified Split on Unique Subjects)**:
+       - Total Unique Subjects: 102 (87 real NASA space telescope subjects, 15 mock subjects).
+       - Train Set: 81 samples (66 pulse, 9 noise, 6 unclear).
+       - Validation Set: 10 samples (8 pulse, 1 noise, 1 unclear).
+       - Test Set: 11 samples (9 pulse, 1 noise, 1 unclear).
+     - **Convergence Trajectory**:
+       - Peak Validation Accuracy: **90.00%**
+       - Peak Validation Macro F1: **0.6471** (Epoch 6)
+       - Model weights persisted to `checkpoints/dual_stream_best.pth`.
+   - **Single-Stream Re-Training (Local ROI Cropped ResNet-18)**:
      ```bash
-     python train_dual_stream.py --data_csv data/annotated_training_data.csv --epochs 5 --batch_size 2
+     python train.py --data_csv data/annotated_training_data.csv --epochs 10 --batch_size 8
      ```
-   - **Single-Stream Re-Training (Local ROI Cropped)**:
-     ```bash
-     python train.py --data_csv data/combined_training_dataset.csv --epochs 10 --batch_size 4
-     ```
+     - Peak Validation Macro F1: **0.5714** (Epoch 5)
+     - Model weights persisted to `checkpoints/best_model.pth`.
+   - **Active Learning Hub Reload**:
+     - The background annotation server on port 8080 was restarted with the newly retrained `checkpoints/dual_stream_best.pth`.
+     - The updated model resolves previously ambiguous candidates (e.g. predicting candidate `GRB050915A` / Subject `95372866` as `pulse` with 63.8% confidence, down from an ambiguous `unclear` state).
    - **Small-Batch Safeguarding**:
-     Training loaders incorporate adaptive effective batch sizing and `drop_last` condition checks (`len(train_df) % eff_batch_size == 1`), preventing PyTorch `nn.BatchNorm1d` singularities on trailing single-sample batches when training on custom annotation sets.
+     - Training loaders incorporate adaptive effective batch sizing and `drop_last` condition checks (`len(train_df) % eff_batch_size == 1`), preventing PyTorch `nn.BatchNorm1d` singularities on trailing single-sample batches when training on custom annotation sets.
+
 
 
 

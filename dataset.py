@@ -320,8 +320,10 @@ def create_stratified_splits(
 
     # Filter out rows with invalid label_id
     valid_df = df_copy[df_copy["label_id"].isin([0, 1, 2])].copy()
+    if "subject_id" in valid_df.columns:
+        valid_df = valid_df.drop_duplicates(subset=["subject_id"], keep="last")
     if len(valid_df) < len(df):
-        print(f"Filtered out {len(df) - len(valid_df)} records without valid 3-class labels.")
+        print(f"Filtered / deduplicated: using {len(valid_df)} unique records with valid 3-class labels.")
 
     rng = np.random.default_rng(random_state)
     train_indices = []
