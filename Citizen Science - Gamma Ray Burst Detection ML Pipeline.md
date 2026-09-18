@@ -577,12 +577,12 @@ All personal checking annotations are persisted using a standardized schema comp
    ```bash
    python predict.py --evaluate --test_csv data/annotated_training_data.csv --dual_stream --output_cm checkpoints/annotated_data_cm.png
    ```
-   **Empirical Performance on Verified Subjects ($N=8$)**:
-   - **Overall Accuracy**: 87.50% (7/8 correct)
-   - **Macro F1-Score**: 0.8586
-   - **Pulse Precision**: 1.0000 | Recall: 0.8333 | F1: 0.9091
-   - **Noise Precision**: 1.0000 | Recall: 1.0000 | F1: 1.0000
-   - **Unclear Precision**: 0.5000 | Recall: 1.0000 | F1: 0.6667
+   **Empirical Performance on Full Verified Annotation Dataset ($N=135$)**:
+   - **Overall Accuracy**: **76.30%** (103/135 correct)
+   - **Macro F1-Score**: **0.6133**
+   - **Pulse**: Precision: 0.8037 | Recall: 0.8958 | F1: 0.8473 ($N=96$)
+   - **Noise**: Precision: 0.6111 | Recall: 0.5500 | F1: 0.5789 ($N=20$)
+   - **Unclear**: Precision: 0.6000 | Recall: 0.3158 | F1: 0.4138 ($N=19$)
    - **Output Confusion Matrix**: [`checkpoints/annotated_data_cm.png`](file:///c:/Users/banke/OneDrive/Desktop/Citizen%20science/gamma%20ray%20burst%20detection/checkpoints/annotated_data_cm.png)
 
 3. **Re-Training on Personal Checking Datasets ($N=102$ Unique Subjects / $135$ Annotations)**:
