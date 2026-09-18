@@ -44,11 +44,13 @@ class CandidateManager:
         manifest_path: Optional[str] = "data/zooniverse/subjects_manifest.csv",
         images_dir: Optional[str] = "data/zooniverse/images",
         output_csv: str = "data/annotated_training_data.csv",
+        auto_replenish: bool = False,
     ):
         self.manifest_path = Path(manifest_path) if manifest_path else None
         self.images_dir = Path(images_dir) if images_dir else None
         self.output_csv = Path(output_csv)
         self.output_csv.parent.mkdir(parents=True, exist_ok=True)
+        self.auto_replenish = auto_replenish
 
         self.candidates: List[Dict[str, Any]] = []
         self.annotated_ids: Set[str] = set()
@@ -116,7 +118,7 @@ class CandidateManager:
             except Exception as e:
                 print(f"Warning reading manifest: {e}")
 
-        # 2. Add any local images in images_dir not in manifest
+        # 2. Add any local real Zooniverse images in images_dir not in manifest
         if self.images_dir and self.images_dir.exists():
             for img_file in self.images_dir.glob("*.png"):
                 subj_id = img_file.stem
@@ -127,25 +129,57 @@ class CandidateManager:
                         "image_source": str(img_file),
                     })
 
-        # 3. Fallback to mock images only if no candidates were found and no manifest was given
-        if len(self.candidates) == 0 and not self.manifest_path:
-            mock_dir = Path("data/mock_burst_chaser/images")
-            if mock_dir.exists():
-                for img_file in mock_dir.glob("*.png"):
-                    subj_id = img_file.stem
-                    self.candidates.append({
-                        "subject_id": subj_id,
-                        "grb_id": "GRB_SYNTHETIC",
-                        "image_source": str(img_file),
-                    })
+        # 3. If unannotated candidate pool is low, automatically fetch real candidates from Zooniverse if enabled
+        unannotated = [c for c in self.candidates if c["subject_id"] not in self.annotated_ids]
+        if self.auto_replenish and len(unannotated) < 10:
+            try:
+                print(f"Candidate queue has only {len(unannotated)} unannotated subjects; fetching fresh real Burst Chaser candidates from Zooniverse...")
+                from data_loader import ZooniverseBurstChaserLoader
+                loader = ZooniverseBurstChaserLoader()
+                df = loader.fetch_subjects(max_subjects=50)
+                for _, row in df.iterrows():
+                    subj_id = str(row.get("subject_id", "")).strip()
+                    if not any(c["subject_id"] == subj_id for c in self.candidates):
+                        target_src = str(row.get("image_path") or row.get("image_url") or "")
+                        if target_src:
+                            self.candidates.append({
+                                "subject_id": subj_id,
+                                "grb_id": str(row.get("grb_id", "GRB_REAL")),
+                                "image_source": target_src,
+                            })
+            except Exception as err:
+                print(f"Notice during live subject replenishment: {err}")
 
-        print(f"Candidate queue loaded: {len(self.candidates)} total subjects available.")
+        print(f"Candidate queue loaded: {len(self.candidates)} total real NASA Burst Chaser subjects available.")
 
     def get_next_candidate(self) -> Optional[Dict[str, Any]]:
         """Returns the next candidate subject that has not yet been annotated."""
         for cand in self.candidates:
             if cand["subject_id"] not in self.annotated_ids:
                 return cand
+
+        # Auto-replenish from Zooniverse if candidate queue is exhausted
+        if self.auto_replenish:
+            try:
+                print("Candidate queue exhausted; fetching next batch of real NASA Burst Chaser subjects from Zooniverse...")
+                from data_loader import ZooniverseBurstChaserLoader
+                loader = ZooniverseBurstChaserLoader()
+                df = loader.fetch_subjects(max_subjects=50)
+                for _, row in df.iterrows():
+                    subj_id = str(row.get("subject_id", "")).strip()
+                    if subj_id not in self.annotated_ids and not any(c["subject_id"] == subj_id for c in self.candidates):
+                        target_src = str(row.get("image_path") or row.get("image_url") or "")
+                        if target_src:
+                            new_cand = {
+                                "subject_id": subj_id,
+                                "grb_id": str(row.get("grb_id", "GRB_REAL")),
+                                "image_source": target_src,
+                            }
+                            self.candidates.append(new_cand)
+                            return new_cand
+            except Exception as err:
+                print(f"Replenishment error: {err}")
+
         return None
 
     def record_annotation(
@@ -436,11 +470,12 @@ def run_annotation_server(
     model, meta = load_model(checkpoint_path=ckpt_target, use_dual_stream=dual_stream, device=device)
     model_type = meta.get("model_type", "dual_stream" if dual_stream else "single_stream")
 
-    # Initialize Candidate Manager
+    # Initialize Candidate Manager with auto-replenishment enabled
     manager = CandidateManager(
         manifest_path=manifest,
         images_dir="data/zooniverse/images",
         output_csv=output,
+        auto_replenish=True,
     )
 
     # Configure Handler

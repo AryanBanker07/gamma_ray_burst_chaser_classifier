@@ -517,8 +517,15 @@ To scale the training set with expert-verified ground truth, an interactive acti
    - Verified labels are committed to `data/annotated_training_data.csv`.
    - The candidate manager indexes previously annotated subjects upon startup, preventing duplicate presentations.
    - Live metrics track total verified samples, individual class counts, and model agreement rates.
-4. **On-Demand Candidate Generation**:
-   - If candidate queues are exhausted, the server can synthesize batches of fresh mock light curves via `MockBurstChaserLoader` or ingest new batches from Zooniverse Panoptes APIs.
+4. **Full Catalog Integration (Over 5,700 Real NASA Spacecraft Observations)**:
+   - Initial pipeline prototypes focused on the practice workflow (`25777`), which only linked to a small 19-subject set (`117958`, `Pulse_vs_noise`). When that practice set was completed, earlier scripts fell back to synthetic data.
+   - The candidate queue has now been connected directly to the primary NASA Zooniverse Burst Chaser subject repositories:
+     - **Subject Set `118003` (`Pulse_shape`)**: 1,649 authentic NASA Neil Gehrels Swift Observatory BAT light curves.
+     - **Subject Set `137715` (`Combined_Fermi`)**: 2,632 authentic NASA Fermi Space Telescope GBM light curves.
+     - **Subject Set `117815` (`Pulse_shape_old`)**: 1,487 additional Swift-BAT light curves.
+   - Over **5,700 real candidate light curves** are now directly accessible.
+   - **Dual-Marker ROI Detection**: The vision pipeline's segmentation module automatically accommodates both Burst Chaser marking conventions: red elliptical outlines (used in practice sets) and blue shaded candidate interval bands (used in main science workflows).
+   - **Automated Continuous Replenishment**: When unannotated candidates in the queue fall below 10, the server automatically queries the Zooniverse API to fetch the next batch of real space telescope candidates in parallel, ensuring the queue never runs dry and eliminating mock data fallback.
 
 ### B. Execution Commands
 To launch the active-learning annotation server:

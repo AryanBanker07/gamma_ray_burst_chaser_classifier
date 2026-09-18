@@ -51,10 +51,10 @@ def detect_red_marker_roi(
     else:
         return None
 
-    # Convert to HSV color space for robust red color isolation
+    # Convert to HSV color space for robust color isolation
     hsv = cv2.cvtColor(bgr, cv2.COLOR_BGR2HSV)
 
-    # Red wraps across the 0/180 boundary in HSV
+    # 1. Primary Marker: Red elliptical marker (wraps across 0/180 boundary)
     lower_red1 = np.array([0, 70, 70])
     upper_red1 = np.array([12, 255, 255])
     lower_red2 = np.array([165, 70, 70])
@@ -62,23 +62,28 @@ def detect_red_marker_roi(
 
     mask1 = cv2.inRange(hsv, lower_red1, upper_red1)
     mask2 = cv2.inRange(hsv, lower_red2, upper_red2)
-    mask = cv2.bitwise_or(mask1, mask2)
+    mask_red = cv2.bitwise_or(mask1, mask2)
 
-    # Clean up small noise with morphological opening
     kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (3, 3))
-    mask = cv2.morphologyEx(mask, cv2.MORPH_CLOSE, kernel)
+    mask_red = cv2.morphologyEx(mask_red, cv2.MORPH_CLOSE, kernel)
 
-    contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-    if not contours:
-        return None
+    contours_red, _ = cv2.findContours(mask_red, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+    valid_red = [c for c in contours_red if cv2.contourArea(c) >= min_area]
 
-    # Find the largest contour that exceeds min_area
-    valid_contours = [c for c in contours if cv2.contourArea(c) >= min_area]
-    if not valid_contours:
-        return None
-
-    best_contour = max(valid_contours, key=cv2.contourArea)
-    bx, by, bw, bh = cv2.boundingRect(best_contour)
+    if valid_red:
+        best_contour = max(valid_red, key=cv2.contourArea)
+        bx, by, bw, bh = cv2.boundingRect(best_contour)
+    else:
+        # 2. Secondary Marker: Blue shaded candidate interval (used in Pulse_shape & Combined_Fermi workflows)
+        # Typically H in [90, 130], S in [20, 140], V in [160, 255]
+        mask_blue = cv2.inRange(hsv, np.array([90, 20, 160]), np.array([135, 140, 255]))
+        mask_blue = cv2.morphologyEx(mask_blue, cv2.MORPH_CLOSE, kernel)
+        contours_blue, _ = cv2.findContours(mask_blue, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+        valid_blue = [c for c in contours_blue if cv2.contourArea(c) >= 150.0]
+        if not valid_blue:
+            return None
+        best_contour = max(valid_blue, key=cv2.contourArea)
+        bx, by, bw, bh = cv2.boundingRect(best_contour)
 
     # Apply padding to capture context around the marked feature
     pad_w = int(bw * padding_ratio)

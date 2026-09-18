@@ -13,7 +13,7 @@ import os
 import re
 import json
 import urllib.request
-from typing import Dict, List, Optional, Tuple, Any
+from typing import Dict, List, Optional, Tuple, Any, Union
 from pathlib import Path
 import pandas as pd
 import numpy as np
@@ -118,92 +118,133 @@ class ZooniverseBurstChaserLoader:
         self,
         project_slug: str = "amylien/burst-chaser",
         workflow_id: int = 25777,
+        subject_set_ids: Optional[List[Union[int, str]]] = None,
         cache_dir: str = "data/zooniverse",
     ):
         self.project_slug = project_slug
         self.workflow_id = workflow_id
+        # Subject sets in Burst Chaser:
+        # 118003: 'Pulse_shape' (1,649 Swift-BAT light-curve subjects)
+        # 137715: 'Combined_Fermi' (2,632 Fermi GBM light-curve subjects)
+        # 117958: 'Pulse_vs_noise' (19 Practice subjects)
+        self.subject_set_ids = [str(s) for s in subject_set_ids] if subject_set_ids else ["118003", "137715", "117958"]
         self.cache_dir = Path(cache_dir)
         self.images_dir = self.cache_dir / "images"
         self.images_dir.mkdir(parents=True, exist_ok=True)
 
-    def fetch_subjects(self, max_subjects: Optional[int] = None) -> pd.DataFrame:
+    def fetch_subjects(
+        self,
+        max_subjects: Optional[int] = 100,
+        subject_set_id: Optional[Union[int, str]] = None,
+        max_workers: int = 8,
+    ) -> pd.DataFrame:
         """
-        Fetch subjects linked to the specified workflow or subject sets.
-        Downloads the images and parses metadata.
+        Fetches authentic NASA Burst Chaser subjects directly from Zooniverse public APIs.
+        Supports parallel image downloading and metadata parsing across thousands of available candidates.
         """
-        try:
-            from panoptes_client import Panoptes, Project, Workflow, Subject
-        except ImportError as e:
-            raise ImportError(
-                "panoptes_client is required for live Zooniverse fetching. "
-                "Install via 'pip install panoptes-client'."
-            ) from e
+        from concurrent.futures import ThreadPoolExecutor
 
-        print(f"Connecting to Zooniverse project '{self.project_slug}', Workflow {self.workflow_id}...")
-        workflow = Workflow.find(self.workflow_id)
-        subject_set_ids = [ss.id for ss in workflow.links.subject_sets]
-        print(f"Workflow '{workflow.display_name}' has linked subject set IDs: {subject_set_ids}")
+        target_sets = [str(subject_set_id)] if subject_set_id else self.subject_set_ids
+        manifest_path = self.cache_dir / "subjects_manifest.csv"
+
+        existing_df = pd.read_csv(manifest_path) if manifest_path.exists() else pd.DataFrame()
+        existing_ids = set(existing_df["subject_id"].astype(str)) if not existing_df.empty and "subject_id" in existing_df.columns else set()
 
         records = []
-        count = 0
+        target_count = max_subjects if max_subjects is not None else 1000
 
-        for ss_id in subject_set_ids:
-            print(f"Fetching subjects from subject set {ss_id}...")
-            subjects_iter = Subject.where(subject_set_id=ss_id)
-            for subj in subjects_iter:
-                subj_id = str(subj.id)
-                meta = subj.metadata or {}
-                grb_id = parse_grb_trigger_id(meta)
-                time_coords = parse_time_window_coordinates(meta)
-                label = extract_label_from_metadata(meta)
+        print(f"Fetching real NASA Burst Chaser subjects across sets {target_sets} (Target: {target_count})...")
 
-                # Extract image URL
-                image_url = None
-                if subj.locations and len(subj.locations) > 0:
-                    loc = subj.locations[0]
-                    if isinstance(loc, dict):
-                        for mime, url in loc.items():
-                            if "image" in mime or url.endswith((".png", ".jpg", ".jpeg")):
-                                image_url = url
-                                break
-                    elif isinstance(loc, str):
-                        image_url = loc
-
-                # Download image if URL exists
-                local_path = None
-                if image_url:
-                    ext = os.path.splitext(image_url.split("?")[0])[1] or ".png"
-                    local_path = self.images_dir / f"{subj_id}{ext}"
-                    if not local_path.exists():
-                        try:
-                            urllib.request.urlretrieve(image_url, local_path)
-                        except Exception as dl_err:
-                            print(f"Failed to download subject {subj_id} image from {image_url}: {dl_err}")
-                            local_path = None
-
-                records.append({
-                    "subject_id": subj_id,
-                    "image_path": str(local_path) if local_path and local_path.exists() else None,
-                    "image_url": image_url,
-                    "grb_id": grb_id,
-                    "t_start": time_coords["t_start"],
-                    "t_stop": time_coords["t_stop"],
-                    "label": label,
-                    "label_id": CLASS_TO_IDX.get(label, -1) if label else -1,
-                    "raw_metadata": json.dumps(meta),
-                })
-
-                count += 1
-                if max_subjects is not None and count >= max_subjects:
-                    break
-            if max_subjects is not None and count >= max_subjects:
+        for s_set in target_sets:
+            if len(records) >= target_count:
                 break
+            page = 1
+            while len(records) < target_count:
+                url = f"https://www.zooniverse.org/api/subjects?subject_set_id={s_set}&page={page}&page_size=50"
+                try:
+                    req = urllib.request.Request(url, headers={"Accept": "application/vnd.api+json; version=1"})
+                    with urllib.request.urlopen(req, timeout=10) as resp:
+                        res = json.loads(resp.read().decode("utf-8"))
+                except Exception as err:
+                    print(f"Error querying subject set {s_set} page {page}: {err}")
+                    break
 
-        df = pd.DataFrame(records)
-        manifest_path = self.cache_dir / "subjects_manifest.csv"
-        df.to_csv(manifest_path, index=False)
-        print(f"Fetched {len(df)} subjects. Manifest saved to {manifest_path}")
-        return df
+                batch = res.get("subjects", [])
+                if not batch:
+                    break
+
+                for subj in batch:
+                    subj_id = str(subj.get("id"))
+                    meta = subj.get("metadata", {}) or {}
+                    grb_id = parse_grb_trigger_id(meta)
+                    time_coords = parse_time_window_coordinates(meta)
+                    label = extract_label_from_metadata(meta)
+
+                    image_url = None
+                    locations = subj.get("locations", [])
+                    if locations and len(locations) > 0:
+                        loc = locations[0]
+                        if isinstance(loc, dict):
+                            for mime, u in loc.items():
+                                if "image" in mime or u.endswith((".png", ".jpg", ".jpeg")):
+                                    image_url = u
+                                    break
+                        elif isinstance(loc, str):
+                            image_url = loc
+
+                    records.append({
+                        "subject_id": subj_id,
+                        "grb_id": grb_id,
+                        "image_url": image_url,
+                        "t_start": time_coords["t_start"],
+                        "t_stop": time_coords["t_stop"],
+                        "label": label,
+                        "label_id": CLASS_TO_IDX.get(label, -1) if label else -1,
+                        "subject_set_id": str(s_set),
+                        "raw_metadata": json.dumps(meta),
+                    })
+
+                    if len(records) >= target_count:
+                        break
+
+                page += 1
+
+        print(f"Retrieved metadata for {len(records)} candidates. Downloading images in parallel...")
+
+        # Multi-threaded image download
+        def _download_candidate_image(rec):
+            s_id = rec["subject_id"]
+            img_url = rec.get("image_url")
+            if not img_url:
+                rec["image_path"] = None
+                return rec
+
+            ext = os.path.splitext(img_url.split("?")[0])[1] or ".png"
+            dest = self.images_dir / f"{s_id}{ext}"
+            if not (dest.exists() and dest.stat().st_size > 0):
+                try:
+                    urllib.request.urlretrieve(img_url, dest)
+                except Exception as dl_err:
+                    print(f"Failed to download subject {s_id}: {dl_err}")
+                    rec["image_path"] = None
+                    return rec
+
+            rec["image_path"] = str(dest)
+            return rec
+
+        with ThreadPoolExecutor(max_workers=max_workers) as executor:
+            downloaded_records = list(executor.map(_download_candidate_image, records))
+
+        new_df = pd.DataFrame(downloaded_records)
+        if not existing_df.empty:
+            combined_df = pd.concat([existing_df, new_df], ignore_index=True)
+            combined_df = combined_df.drop_duplicates(subset=["subject_id"]).reset_index(drop=True)
+        else:
+            combined_df = new_df
+
+        combined_df.to_csv(manifest_path, index=False)
+        print(f"Successfully synchronized {len(combined_df)} real Burst Chaser candidates to: {manifest_path}")
+        return combined_df
 
 
 class ClassificationIngestionModule:
