@@ -23,20 +23,23 @@ from sklearn.model_selection import train_test_split
 from data_loader import CLASS_NAMES, CLASS_TO_IDX, IDX_TO_CLASS
 
 
-def detect_red_marker_roi(
+def detect_candidate_marker(
     image_input: Union[Image.Image, np.ndarray, str],
     padding_ratio: float = 0.25,
     min_area: float = 40.0,
-) -> Optional[Tuple[int, int, int, int]]:
+) -> Tuple[Optional[Tuple[int, int, int, int]], Optional[str]]:
     """
-    Detects the red elliptical region-of-interest marker on a light-curve plot.
-    Returns the padded bounding box (x_min, y_min, x_max, y_max) or None if no marker found.
+    Detects the candidate region-of-interest marker on a NASA Burst Chaser light-curve plot.
+    Supports both marking conventions used in the project:
+    1. 'red_circle': Explicit red elliptical outline (used in tutorial practice subjects).
+    2. 'blue_band': Shaded vertical blue candidate interval (used across 5,700+ real Swift & Fermi observations).
+    Returns (padded_bbox, marker_type) or (None, None).
     """
     # Load or convert to numpy BGR image for OpenCV
     if isinstance(image_input, str):
         bgr = cv2.imread(image_input)
         if bgr is None:
-            return None
+            return None, None
         height, width = bgr.shape[:2]
     elif isinstance(image_input, Image.Image):
         rgb = np.array(image_input)
@@ -47,12 +50,13 @@ def detect_red_marker_roi(
             bgr = image_input.copy()
             height, width = bgr.shape[:2]
         else:
-            return None
+            return None, None
     else:
-        return None
+        return None, None
 
     # Convert to HSV color space for robust color isolation
     hsv = cv2.cvtColor(bgr, cv2.COLOR_BGR2HSV)
+    kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (3, 3))
 
     # 1. Primary Marker: Red elliptical marker (wraps across 0/180 boundary)
     lower_red1 = np.array([0, 70, 70])
@@ -63,8 +67,6 @@ def detect_red_marker_roi(
     mask1 = cv2.inRange(hsv, lower_red1, upper_red1)
     mask2 = cv2.inRange(hsv, lower_red2, upper_red2)
     mask_red = cv2.bitwise_or(mask1, mask2)
-
-    kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (3, 3))
     mask_red = cv2.morphologyEx(mask_red, cv2.MORPH_CLOSE, kernel)
 
     contours_red, _ = cv2.findContours(mask_red, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
@@ -73,17 +75,19 @@ def detect_red_marker_roi(
     if valid_red:
         best_contour = max(valid_red, key=cv2.contourArea)
         bx, by, bw, bh = cv2.boundingRect(best_contour)
+        marker_type = "red_circle"
     else:
         # 2. Secondary Marker: Blue shaded candidate interval (used in Pulse_shape & Combined_Fermi workflows)
-        # Typically H in [90, 130], S in [20, 140], V in [160, 255]
+        # Typically H in [90, 135], S in [20, 140], V in [160, 255]
         mask_blue = cv2.inRange(hsv, np.array([90, 20, 160]), np.array([135, 140, 255]))
         mask_blue = cv2.morphologyEx(mask_blue, cv2.MORPH_CLOSE, kernel)
         contours_blue, _ = cv2.findContours(mask_blue, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
         valid_blue = [c for c in contours_blue if cv2.contourArea(c) >= 150.0]
         if not valid_blue:
-            return None
+            return None, None
         best_contour = max(valid_blue, key=cv2.contourArea)
         bx, by, bw, bh = cv2.boundingRect(best_contour)
+        marker_type = "blue_band"
 
     # Apply padding to capture context around the marked feature
     pad_w = int(bw * padding_ratio)
@@ -96,9 +100,19 @@ def detect_red_marker_roi(
 
     # Ensure box has non-zero dimension
     if (x_max - x_min < 10) or (y_max - y_min < 10):
-        return None
+        return None, None
 
-    return (x_min, y_min, x_max, y_max)
+    return (x_min, y_min, x_max, y_max), marker_type
+
+
+def detect_red_marker_roi(
+    image_input: Union[Image.Image, np.ndarray, str],
+    padding_ratio: float = 0.25,
+    min_area: float = 40.0,
+) -> Optional[Tuple[int, int, int, int]]:
+    """Backwards-compatible wrapper returning bounding box only."""
+    box, _ = detect_candidate_marker(image_input, padding_ratio=padding_ratio, min_area=min_area)
+    return box
 
 
 def crop_roi_or_full(

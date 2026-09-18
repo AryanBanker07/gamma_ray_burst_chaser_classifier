@@ -210,6 +210,44 @@
       color: #fda4af;
     }
 
+    .tag-roi-blue {
+      background: rgba(14, 165, 233, 0.18);
+      border: 1px solid rgba(14, 165, 233, 0.4);
+      color: #38bdf8;
+      font-weight: 600;
+    }
+
+    .tag-roi-red {
+      background: rgba(244, 63, 94, 0.18);
+      border: 1px solid rgba(244, 63, 94, 0.4);
+      color: #fda4af;
+      font-weight: 600;
+    }
+
+    .tag-roi-none {
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      color: var(--text-dim);
+    }
+
+    .candidate-guide-banner {
+      background: rgba(14, 165, 233, 0.08);
+      border: 1px solid rgba(14, 165, 233, 0.25);
+      border-radius: 8px;
+      padding: 0.5rem 0.85rem;
+      margin-bottom: 0.85rem;
+      font-size: 0.78rem;
+      color: #bae6fd;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .guide-icon {
+      font-size: 0.95rem;
+      color: #38bdf8;
+    }
+
     .image-stage {
       position: relative;
       background: #030712;
@@ -649,6 +687,11 @@
         </div>
       </div>
 
+      <div class="candidate-guide-banner">
+        <span class="guide-icon">&#x2139;</span>
+        <span><strong>Target Region:</strong> In real NASA Burst Chaser subjects, candidate bursts are highlighted by the <strong>shaded blue band</strong> (or a red circle on practice tutorial subjects). Inspect the candidate structure inside this region.</span>
+      </div>
+
       <div class="image-stage" id="image-stage">
         <div class="stage-loading" id="stage-loading">
           <div class="spinner"></div>
@@ -892,11 +935,21 @@
       document.getElementById("grb-id-tag").textContent = subj.grb_id || "GRB UNKNOWN";
       
       const roiTag = document.getElementById("roi-status-tag");
-      if (subj.roi_detected) {
-        roiTag.textContent = "ROI Marker Detected";
+      if (subj.marker_type === "blue_band") {
+        roiTag.textContent = "Candidate: Blue Shaded Band";
+        roiTag.className = "tag tag-roi-blue";
+        roiTag.style.display = "inline-block";
+      } else if (subj.marker_type === "red_circle") {
+        roiTag.textContent = "Candidate: Red Circle";
+        roiTag.className = "tag tag-roi-red";
+        roiTag.style.display = "inline-block";
+      } else if (subj.roi_detected) {
+        roiTag.textContent = "Candidate Region Detected";
+        roiTag.className = "tag tag-roi";
         roiTag.style.display = "inline-block";
       } else {
-        roiTag.textContent = "Full Light Curve (No Red ROI)";
+        roiTag.textContent = "Full Light Curve";
+        roiTag.className = "tag tag-roi-none";
         roiTag.style.display = "inline-block";
       }
 

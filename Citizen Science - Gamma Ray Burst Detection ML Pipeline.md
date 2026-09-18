@@ -524,7 +524,11 @@ To scale the training set with expert-verified ground truth, an interactive acti
      - **Subject Set `137715` (`Combined_Fermi`)**: 2,632 authentic NASA Fermi Space Telescope GBM light curves.
      - **Subject Set `117815` (`Pulse_shape_old`)**: 1,487 additional Swift-BAT light curves.
    - Over **5,700 real candidate light curves** are now directly accessible.
-   - **Dual-Marker ROI Detection**: The vision pipeline's segmentation module automatically accommodates both Burst Chaser marking conventions: red elliptical outlines (used in practice sets) and blue shaded candidate interval bands (used in main science workflows).
+   - **Dual-Marker ROI Detection & Zooniverse Protocol Distinction**:
+      - **Practice Tutorial Convention (`red_circle`)**: The 19 introductory tutorial subjects in Subject Set `117958` used hand-drawn red elliptical loops around sample candidate peaks.
+      - **Scientific Observatory Convention (`blue_band`)**: Across all 5,768 authentic space telescope observations (Swift-BAT Subject Sets `118003` & `117815`, Fermi GBM Subject Set `137715`), the NASA science team marks candidate burst intervals using a **shaded vertical blue band** corresponding to the trigger interval ($T_{\text{start}}$ to $T_{\text{stop}}$). The official Zooniverse prompt asks: *"What does the pulse structure inside the blue region look like?"*
+      - The generalized detection algorithm (`detect_candidate_marker` in `dataset.py`) segments both markers: red contours ($H \in [0, 12] \cup [165, 180]$) and blue shaded intervals ($H \in [90, 135], S \in [20, 140], V \in [160, 255]$).
+      - The annotation interface dynamically presents a color-coded indicator badge (`Candidate: Blue Shaded Band` in cyan vs `Candidate: Red Circle` in crimson) alongside a contextual guidance banner explaining the region to inspect.
    - **Automated Continuous Replenishment**: When unannotated candidates in the queue fall below 10, the server automatically queries the Zooniverse API to fetch the next batch of real space telescope candidates in parallel, ensuring the queue never runs dry and eliminating mock data fallback.
 
 ### B. Execution Commands

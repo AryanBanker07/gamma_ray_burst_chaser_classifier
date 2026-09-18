@@ -364,6 +364,7 @@ class AnnotationRequestHandler(BaseHTTPRequestHandler):
                     "confidence": float(pred["confidence"]),
                     "probabilities": pred["probabilities"],
                     "roi_detected": bool(pred["cropped"]),
+                    "marker_type": pred.get("marker_type"),
                 }
             }
             self._send_json(response_data)

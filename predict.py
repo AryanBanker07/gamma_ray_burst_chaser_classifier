@@ -31,7 +31,7 @@ import torch.nn.functional as F
 from sklearn.metrics import confusion_matrix, classification_report, accuracy_score, f1_score
 
 from data_loader import CLASS_NAMES, CLASS_TO_IDX, IDX_TO_CLASS
-from dataset import crop_roi_or_full, get_transforms, BurstChaserDataset, DualStreamBurstChaserDataset
+from dataset import crop_roi_or_full, detect_candidate_marker, get_transforms, BurstChaserDataset, DualStreamBurstChaserDataset
 from model import BurstChaserClassifier, DualStreamBurstChaserClassifier
 
 
@@ -145,15 +145,22 @@ def predict_single_image(
     # 2. Preprocess image
     orig_img = Image.open(local_path).convert("RGB")
     transform = get_transforms(is_train=False)
+    roi_bbox, marker_type = detect_candidate_marker(orig_img, padding_ratio=padding_ratio)
 
     with torch.no_grad():
         if model_type == "dual_stream":
             tensor_global = transform(orig_img).unsqueeze(0).to(device)
-            cropped_img, roi_bbox = crop_roi_or_full(orig_img, crop_roi=True, padding_ratio=padding_ratio)
+            if roi_bbox is not None:
+                cropped_img = orig_img.crop(roi_bbox)
+            else:
+                cropped_img = orig_img
             tensor_local = transform(cropped_img).unsqueeze(0).to(device)
             logits = model(tensor_global, tensor_local)
         else:
-            processed_img, roi_bbox = crop_roi_or_full(orig_img, crop_roi=crop_roi, padding_ratio=padding_ratio)
+            if crop_roi and roi_bbox is not None:
+                processed_img = orig_img.crop(roi_bbox)
+            else:
+                processed_img = orig_img
             tensor_img = transform(processed_img).unsqueeze(0).to(device)
             logits = model(tensor_img)
 
@@ -178,6 +185,7 @@ def predict_single_image(
         "confidence": confidence,
         "probabilities": {CLASS_NAMES[i]: float(probs[i]) for i in range(len(CLASS_NAMES))},
         "roi_box": roi_bbox,
+        "marker_type": marker_type,
         "cropped": roi_bbox is not None,
         "strict_unclear_applied": strict_unclear,
     }
