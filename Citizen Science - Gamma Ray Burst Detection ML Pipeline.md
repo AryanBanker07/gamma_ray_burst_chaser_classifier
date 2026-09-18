@@ -4,6 +4,7 @@
 **Target Workflow**: NASA Zooniverse `amylien/burst-chaser` (Workflow ID: `25777`, Project ID: `18664`)  
 **Workspace**: `c:\Users\banke\OneDrive\Desktop\Citizen science\gamma ray burst detection`  
 **Manuscript**: [`burst_chaser_pipeline.pdf`](file:///c:/Users/banke/OneDrive/Desktop/Citizen%20science/gamma%20ray%20burst%20detection/burst_chaser_pipeline.pdf) (Publication report)  
+**Repository**: [AryanBanker07/gamma_ray_burst_chaser_classifier](https://github.com/AryanBanker07/gamma_ray_burst_chaser_classifier)  
 **Date**: September 2026  
 
 ---
