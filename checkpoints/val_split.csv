@@ -1,0 +1,2 @@
+subject_id,grb_id,image_path,image_source,label,label_id,verified_label,verified_label_id,model_guess,model_confidence,is_agreement,timestamp
+95225862,GRB150711A,data\zooniverse\images\95225862.png,data\zooniverse\images\95225862.png,pulse,0,pulse,0,pulse,0.4126,True,2026-09-18 21:18:59

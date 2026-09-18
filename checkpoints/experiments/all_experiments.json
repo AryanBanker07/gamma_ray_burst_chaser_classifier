@@ -1,0 +1,306 @@
+{
+  "trials": [
+    {
+      "exp_name": "resnet18_pretrained_crop_ce",
+      "backbone": "resnet18",
+      "crop_roi": true,
+      "loss_type": "weighted_ce",
+      "val_best_f1": 1.0,
+      "test_acc": 0.8888888888888888,
+      "test_macro_f1": 0.6296296296296297,
+      "test_loss": 0.7226862907409668,
+      "confusion_matrix": [
+        [
+          4,
+          0,
+          0
+        ],
+        [
+          0,
+          4,
+          0
+        ],
+        [
+          1,
+          0,
+          0
+        ]
+      ],
+      "history": {
+        "train_loss": [
+          0.8119947295340281,
+          0.3514454837829348,
+          0.20945612542212955,
+          0.1944257328434596,
+          0.19872779529246073
+        ],
+        "train_acc": [
+          0.7301587301587301,
+          0.9365079365079365,
+          1.0,
+          1.0,
+          0.9682539682539683
+        ],
+        "val_loss": [
+          0.9172796010971069,
+          0.5253725051879883,
+          0.2586172819137573,
+          0.1366623342037201,
+          0.10845640301704407
+        ],
+        "val_acc": [
+          0.875,
+          1.0,
+          1.0,
+          1.0,
+          1.0
+        ],
+        "val_f1": [
+          0.6190476190476191,
+          1.0,
+          1.0,
+          1.0,
+          1.0
+        ]
+      },
+      "checkpoint_path": "checkpoints\\experiments\\resnet18_pretrained_crop_ce\\best_model.pth"
+    },
+    {
+      "exp_name": "resnet18_no_crop_ablation",
+      "backbone": "resnet18",
+      "crop_roi": false,
+      "loss_type": "weighted_ce",
+      "val_best_f1": 1.0,
+      "test_acc": 0.8888888888888888,
+      "test_macro_f1": 0.6296296296296297,
+      "test_loss": 0.6594597697257996,
+      "confusion_matrix": [
+        [
+          4,
+          0,
+          0
+        ],
+        [
+          0,
+          4,
+          0
+        ],
+        [
+          0,
+          1,
+          0
+        ]
+      ],
+      "history": {
+        "train_loss": [
+          0.8704958293173048,
+          0.4790752719319056,
+          0.2646969717646402,
+          0.22095933816735708,
+          0.20845324297746023
+        ],
+        "train_acc": [
+          0.6031746031746031,
+          0.9523809523809523,
+          0.9841269841269841,
+          1.0,
+          0.9682539682539683
+        ],
+        "val_loss": [
+          1.1347836256027222,
+          0.4999126195907593,
+          0.2192661017179489,
+          0.12088660150766373,
+          0.1001429334282875
+        ],
+        "val_acc": [
+          0.625,
+          1.0,
+          1.0,
+          1.0,
+          1.0
+        ],
+        "val_f1": [
+          0.4444444444444444,
+          1.0,
+          1.0,
+          1.0,
+          1.0
+        ]
+      },
+      "checkpoint_path": "checkpoints\\experiments\\resnet18_no_crop_ablation\\best_model.pth"
+    },
+    {
+      "exp_name": "resnet18_crop_focal_loss",
+      "backbone": "resnet18",
+      "crop_roi": true,
+      "loss_type": "focal",
+      "val_best_f1": 1.0,
+      "test_acc": 1.0,
+      "test_macro_f1": 1.0,
+      "test_loss": 0.02531849592924118,
+      "confusion_matrix": [
+        [
+          4,
+          0,
+          0
+        ],
+        [
+          0,
+          4,
+          0
+        ],
+        [
+          0,
+          0,
+          1
+        ]
+      ],
+      "history": {
+        "train_loss": [
+          0.2259904627525617,
+          0.05140117650467252,
+          0.022888966289068027,
+          0.021965604157201828,
+          0.017999950057220836
+        ],
+        "train_acc": [
+          0.6349206349206349,
+          0.9047619047619048,
+          0.9365079365079365,
+          0.9682539682539683,
+          0.9523809523809523
+        ],
+        "val_loss": [
+          0.22535790503025055,
+          0.16018110513687134,
+          0.11530154943466187,
+          0.051667001098394394,
+          0.026623941957950592
+        ],
+        "val_acc": [
+          0.875,
+          0.875,
+          0.875,
+          1.0,
+          1.0
+        ],
+        "val_f1": [
+          0.6296296296296297,
+          0.6190476190476191,
+          0.6190476190476191,
+          1.0,
+          1.0
+        ]
+      },
+      "checkpoint_path": "checkpoints\\experiments\\resnet18_crop_focal_loss\\best_model.pth"
+    },
+    {
+      "exp_name": "resnet18_scratch_crop",
+      "backbone": "resnet18 (scratch)",
+      "crop_roi": true,
+      "loss_type": "weighted_ce",
+      "val_best_f1": 0.6296296296296297,
+      "test_acc": 0.6666666666666666,
+      "test_macro_f1": 0.4646464646464647,
+      "test_loss": 0.8908771276473999,
+      "history": {
+        "train_loss": [
+          1.0272757221782018,
+          0.6677926182746887,
+          0.4922121337481907,
+          0.3677755986887311,
+          0.31452336197807673
+        ],
+        "train_acc": [
+          0.4444444444444444,
+          0.7619047619047619,
+          0.8888888888888888,
+          0.9523809523809523,
+          0.9523809523809523
+        ],
+        "val_loss": [
+          1.385240077972412,
+          0.8238882422447205,
+          0.854186475276947,
+          0.6470016837120056,
+          0.7219566702842712
+        ],
+        "val_acc": [
+          0.375,
+          0.875,
+          0.5,
+          0.75,
+          0.625
+        ],
+        "val_f1": [
+          0.1818181818181818,
+          0.6296296296296297,
+          0.26666666666666666,
+          0.5333333333333333,
+          0.43333333333333335
+        ]
+      },
+      "checkpoint_path": "checkpoints\\experiments\\resnet18_scratch_crop\\best_model.pth"
+    }
+  ],
+  "summary": [
+    {
+      "Experiment": "resnet18_pretrained_crop_ce",
+      "Backbone": "resnet18",
+      "ROI Cropping": "Yes",
+      "Loss Function": "weighted_ce",
+      "Val Macro F1": 1.0,
+      "Test Accuracy (%)": 88.89,
+      "Test Macro F1": 0.6296
+    },
+    {
+      "Experiment": "resnet18_no_crop_ablation",
+      "Backbone": "resnet18",
+      "ROI Cropping": "No",
+      "Loss Function": "weighted_ce",
+      "Val Macro F1": 1.0,
+      "Test Accuracy (%)": 88.89,
+      "Test Macro F1": 0.6296
+    },
+    {
+      "Experiment": "resnet18_crop_focal_loss",
+      "Backbone": "resnet18",
+      "ROI Cropping": "Yes",
+      "Loss Function": "focal",
+      "Val Macro F1": 1.0,
+      "Test Accuracy (%)": 100.0,
+      "Test Macro F1": 1.0
+    },
+    {
+      "Experiment": "resnet18_scratch_crop",
+      "Backbone": "resnet18 (scratch)",
+      "ROI Cropping": "Yes",
+      "Loss Function": "weighted_ce",
+      "Val Macro F1": 0.6296,
+      "Test Accuracy (%)": 66.67,
+      "Test Macro F1": 0.4646
+    }
+  ],
+  "real_zooniverse": {
+    "accuracy": 0.6842105263157895,
+    "macro_f1": 0.4382716049382716,
+    "confusion_matrix": [
+      [
+        11,
+        0,
+        0
+      ],
+      [
+        3,
+        2,
+        0
+      ],
+      [
+        2,
+        1,
+        0
+      ]
+    ]
+  }
+}

@@ -1,0 +1,5 @@
+Experiment,Backbone,ROI Cropping,Loss Function,Val Macro F1,Test Accuracy (%),Test Macro F1
+resnet18_pretrained_crop_ce,resnet18,Yes,weighted_ce,1.0,88.89,0.6296
+resnet18_no_crop_ablation,resnet18,No,weighted_ce,1.0,88.89,0.6296
+resnet18_crop_focal_loss,resnet18,Yes,focal,1.0,100.0,1.0
+resnet18_scratch_crop,resnet18 (scratch),Yes,weighted_ce,0.6296,66.67,0.4646

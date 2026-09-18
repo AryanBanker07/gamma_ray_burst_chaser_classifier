@@ -1,0 +1,8 @@
+{
+  "holdout_test_accuracy": 0.0,
+  "holdout_test_macro_f1": 0.0,
+  "holdout_cm_path": "checkpoints\\dual_stream_holdout_cm.png",
+  "real_accuracy": 0.15789473684210525,
+  "real_macro_f1": 0.0909090909090909,
+  "real_cm_path": "checkpoints\\dual_stream_real_cm.png"
+}
